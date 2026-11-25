@@ -1,0 +1,149 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+:root {
+  --ifm-color-primary: #1e90ff;
+  --ifm-color-primary-dark: #126ecc;
+  --ifm-color-primary-darker: #0d6ed1;
+  --ifm-color-primary-darkest: #0959ad;
+  --ifm-color-primary-light: #3ca0ff;
+  --ifm-color-primary-lighter: #58adff;
+  --ifm-color-primary-lightest: #80c1ff;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #58adff;
+  --ifm-color-primary-dark: #3ca0ff;
+  --ifm-color-primary-darker: #1e90ff;
+  --ifm-color-primary-darkest: #126ecc;
+  --ifm-color-primary-light: #80c1ff;
+  --ifm-color-primary-lighter: #a0d0ff;
+  --ifm-color-primary-lightest: #c2e0ff;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+.main-site-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.75rem 0 1.25rem;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid var(--ifm-color-primary-dark);
+  border-radius: var(--ifm-button-border-radius);
+  background-color: var(--ifm-color-primary);
+  color: #fff;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.main-site-button:hover {
+  border-color: var(--ifm-color-primary-darker);
+  background-color: var(--ifm-color-primary-dark);
+  color: #fff;
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.main-site-button:focus-visible {
+  outline: 3px solid var(--ifm-color-primary-light);
+  outline-offset: 3px;
+}
+
+.footer {
+  --ifm-footer-background-color: #efefef;
+  --ifm-footer-color: #4a4a4a;
+  --ifm-footer-link-color: #4a4a4a;
+  --ifm-footer-link-hover-color: var(--ifm-color-primary-dark);
+  --ifm-footer-title-color: #1a1a1a;
+  position: relative;
+  border-top: 1px solid #d0d0d0;
+  background: #efefef;
+}
+
+[data-theme='dark'] .footer {
+  --ifm-footer-background-color: #262626;
+  --ifm-footer-color: #d0d0d0;
+  --ifm-footer-link-color: #d0d0d0;
+  --ifm-footer-link-hover-color: var(--ifm-color-primary-light);
+  --ifm-footer-title-color: #ffffff;
+  border-top-color: #333333;
+  background: #262626;
+}
+
+.footer__top {
+  padding-top: 3.5rem;
+  padding-bottom: 2.5rem;
+}
+
+.footer__title {
+  margin-bottom: 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.footer__links {
+  line-height: 2;
+}
+
+.footer__link-item {
+  transition: color 160ms ease;
+}
+
+.footer__link-item:hover {
+  text-decoration: none;
+}
+
+.footer__bottom {
+  border-top: 1px solid #d0d0d0;
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+
+[data-theme='dark'] .footer__bottom {
+  border-top-color: #333333;
+}
+
+.footer__logo {
+  max-width: 52px;
+  margin-bottom: 1rem;
+  border-radius: 12px;
+}
+
+.footer__copyright {
+  color: #7a7a7a;
+  font-size: 0.85rem;
+}
+
+[data-theme='dark'] .footer__copyright {
+  color: #9a9a9a;
+}
+
+#__docusaurus:has(.navbar__link[href='/changelog'][aria-current='page']) .theme-doc-toc-desktop {
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+#__docusaurus:has(.navbar__link[href='/changelog'][aria-current='page']) .theme-doc-toc-desktop .table-of-contents {
+  font-size: 1rem;
+}
+
+#__docusaurus:has(.navbar__link[href='/changelog'][aria-current='page']) .tocCollapsibleContent {
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+@media (max-width: 996px) {
+  .footer__top {
+    padding-top: 2.5rem;
+    padding-bottom: 1.5rem;
+  }
+}

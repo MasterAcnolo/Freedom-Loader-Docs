@@ -1,0 +1,26 @@
+---
+sidebar_position: 6
+---
+
+# Theme system
+
+Freedom Loader supports bundled themes and custom themes in ZIP or folder form. Themes are loaded and validated by the Electron application, then the current list can be refreshed from Settings without restarting.
+
+## Add a theme
+
+1. Select **Open Theme Folder** at the bottom of Settings.
+2. Add a compatible theme `.zip` file or theme directory.
+3. Use the refresh button next to the theme selector.
+4. Choose the theme from the **Theme** selector.
+
+The [Theme Workshop](https://masteracnolo.github.io/Freedom-Loader-Workshop/) can be used to browse community themes or create one.
+
+## Theme package requirements
+
+A theme package must contain a `.theme.json` file with required metadata and style values, including its name, author, version, format version, background color, default text color, button background, and progress-bar fill. Invalid or incomplete themes are skipped and logged.
+
+An optional image can be named `cover` or `background` and use `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif`, or `.avif`. Images larger than 10 MB are ignored. Images are embedded in the loaded theme as data URIs.
+
+Built-in themes are copied into the user's persistent theme directory when the application initializes its theme storage. Custom themes remain under the user's application data and are not overwritten by an application update.
+
+Only install theme archives from sources you trust.

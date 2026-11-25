@@ -1,0 +1,29 @@
+---
+sidebar_position: 7
+---
+
+# Settings and files
+
+Settings are stored as JSON and exposed to the renderer through the Electron preload API. The application starts with bundled defaults, then uses a per-user configuration file in packaged builds. In development, it reads `config/config.dev.json`, creating that file from the default configuration when needed.
+
+When the configuration is loaded, missing keys are added from the defaults without overwriting existing values. Unknown keys are preserved. If the file cannot be read, some runtime code uses the in-memory settings loaded during startup.
+
+## Configuration and application data
+
+The packaged configuration file is named `config.json` under Electron's per-user application data directory. On Windows that is normally `%APPDATA%\Freedom Loader`; on Linux it is normally `~/.config/Freedom Loader`. Exact locations can vary with platform packaging and Electron's user-data path.
+
+The application stores logs and user themes separately from downloaded media. See [Settings and themes](../settings) for common log and download-folder locations.
+
+## Defaults in the source
+
+The current defaults include:
+
+- Automatic media information lookup and playlist downloads: enabled.
+- Metadata and thumbnail embedding: enabled.
+- Download-completion notifications: enabled.
+- Discord Rich Presence: enabled.
+- Playlist folders and playlist filename ordering: disabled.
+- Hardware acceleration: enabled.
+- Theme: `dark`; preferred video codec: `h264`.
+
+The Settings panel exposes user-facing controls; some developer diagnostics and updater preferences are hidden unless developer mode is enabled. The exact available controls can change between application versions.

@@ -1,0 +1,29 @@
+---
+sidebar_position: 4
+---
+
+# Quality and output formats
+
+The main form offers video and audio modes and six quality choices. These are translated into yt-dlp format selectors in the backend.
+
+| UI choice | Format selection behavior |
+|---|---|
+| Best Quality | Best video plus best audio, with combined-format fallbacks. |
+| Medium Quality | Best video up to 720p plus audio. |
+| Lowest Quality | Lowest available video and audio, with fallbacks. |
+| 1080p | Best available video up to 1080p plus audio. |
+| 720p | Best available video up to 720p plus audio. |
+| 480p | Best available video up to 480p plus audio. |
+| Audio Only (MP3) | Best available audio, extracted and converted to MP3. |
+
+These selectors specify a maximum height for capped resolutions; they cannot create a resolution that the source does not provide. The source site may restrict formats, and the final result depends on the available streams and FFmpeg.
+
+## Video processing
+
+For video, Freedom Loader asks yt-dlp to merge streams into an MP4 output. The preferred codec is set separately using the **Custom Codec** option. A requested codec is a preference, not a guarantee: a source may not provide that codec, and exact output depends on the streams yt-dlp can select.
+
+## File naming and playlist ordering
+
+The default filename template is the media title and resulting extension. If **Keep Playlist Order** is enabled for a playlist that is being downloaded, filenames include a two-digit playlist index before the title, for example `01 - Track title.mp4`.
+
+The ordering option is applied only when playlist downloading is enabled. Duplicate filename handling and continuation behavior are controlled by yt-dlp arguments configured by the application.

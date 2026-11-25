@@ -1,0 +1,17 @@
+---
+sidebar_position: 5
+---
+
+# Metadata and thumbnails
+
+Metadata and thumbnail processing are controlled independently in **Settings → Advanced Settings**.
+
+## Metadata
+
+When **Add Metadata** is enabled, Freedom Loader passes yt-dlp's metadata embedding option and supplies a comment identifying the file as downloaded with Freedom Loader, including the application version. Which tags are available depends on the source metadata and output format.
+
+## Thumbnails
+
+When **Add Thumbnail** is enabled, yt-dlp is asked to embed the media thumbnail. The processing stage is reflected in the live status display. Embedding support depends on the media container and the tools provided by FFmpeg.
+
+Turning these settings off omits the corresponding arguments; it does not remove metadata or artwork that might already be part of a source stream.
