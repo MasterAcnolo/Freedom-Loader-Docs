@@ -21,7 +21,6 @@ Open Settings with the gear button on the main screen. Changes are saved automat
 
 | Setting | Default | Description |
 |---|---:|---|
-| Show Changelogs After Update | On | Display the changelog after an application update. |
 | System Tray | Off | Minimize the application to the system tray when closing its window. |
 | Auto Fetch Info | On | Fetch media information when a URL is entered. |
 | Add Metadata | On | Include metadata in downloaded files. |
