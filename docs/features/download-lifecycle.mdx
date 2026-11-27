@@ -34,6 +34,37 @@ The controller checks that the URL can be parsed and that a supplied save path p
 
 For a playlist, the service can create a separate folder using the playlist title when **Create Playlist Folders** is enabled. The title is sanitized for use as a folder name and a numbered suffix is added if that name already exists. The service then builds the yt-dlp options from the request and current settings, including playlist behavior, selected format and quality, metadata preferences, and output filename template.
 
+## HTTP integrations: accept first, then follow events
+
+The desktop interface uses IPC for the download command, while external local integrations can use the Express API. Both paths call the same download controller and service; HTTP is an additional transport, not a separate downloader.
+
+`POST /download` validates the request and immediately responds with `202 Accepted`, a unique `downloadId`, and an `eventsUrl`. The work continues asynchronously. The client then opens that URL as an SSE connection:
+
+```mermaid
+sequenceDiagram
+  participant Client as Local integration
+  participant API as Express API
+  participant Controller as Download controller
+  participant Service as Download service
+
+  Client->>API: POST /download { source, url, options }
+  API->>Controller: Validate and create download job
+  Controller-->>API: downloadId and eventsUrl
+  API-->>Client: 202 Download Started
+  Client->>API: GET /download/{downloadId}/events
+  API-->>Client: snapshot of current status and latest values
+  Service-->>API: Progress, speed, stage, playlist events
+  API-->>Client: Named SSE events
+  Service-->>API: Completion or failure
+  API-->>Client: completed or failed event, then close
+```
+
+The initial `snapshot` contains the job's current `status` and a `latest` object. This lets a client subscribe after it receives the POST response without losing events emitted in between. While the job is active, the stream sends named events: `status`, `progress`, `speed`, `stage`, and `playlist-info`. At the end it sends `completed` with the result, or `failed` with an error, then closes the stream. Each SSE event's `data` is JSON on this per-download endpoint.
+
+The HTTP body requires `source` (the integration name) and `url`. It may also include `audioOnly`, `quality`, `codec`, `outputFolder` (or `savePath`), and `playlistTitle`. Invalid required values are rejected before acceptance. Only one yt-dlp download can run at a time; a request received while one is already active still gets an accepted job ID, and its event stream ends with a `failed` event whose code is `DOWNLOAD_IN_PROGRESS`. `POST /download/cancel` stops the active yt-dlp process; disconnecting from an SSE stream only removes that client and does not cancel the download.
+
+Recent completed and failed job snapshots are retained in memory (up to 20 jobs), so clients that connect just after completion can still read the final snapshot. An unknown or expired ID returns `404 DOWNLOAD_NOT_FOUND`. For endpoint schemas and examples, see the [Local HTTP API](../api) guide or open Swagger UI at `http://localhost:8787/api` while the app is running.
+
 ## 2. yt-dlp does the media work
 
 The service launches yt-dlp as a child process using `execFile` with the executable and its arguments kept separate. yt-dlp handles the site-specific steps needed to retrieve the media. Depending on the selected mode and available streams, it may download separate streams, merge formats, extract MP3 audio, or process metadata and thumbnails with FFmpeg.
@@ -60,9 +91,9 @@ sequenceDiagram
 
 The actual steps depend on the source and user options. For example, audio-only mode asks yt-dlp to extract audio and convert it to MP3; video mode requests an MP4 merge. A requested video codec is a preference applied through yt-dlp's format sorting, not a promise that every source will provide that codec.
 
-## 3. Progress travels back while the request is still running
+## 3. Progress travels back while the download is running
 
-The renderer opens four SSE connections to the local Express server: `/download/progress`, `/download/speed`, `/download/stage`, and `/download/playlist-info`. When yt-dlp writes output, the download service parses useful lines and sends updates to the controller, which publishes them on the corresponding stream.
+The renderer opens four global SSE connections to the local Express server: `/download/progress`, `/download/speed`, `/download/stage`, and `/download/playlist-info`. HTTP integrations can instead subscribe to the per-download `eventsUrl` described above. When yt-dlp writes output, the download service parses useful lines and sends updates to the controller, which publishes them on the corresponding streams.
 
 ```mermaid
 flowchart LR
@@ -78,13 +109,13 @@ flowchart LR
   SSE --> UI["Renderer updates progress display"]
 ```
 
-Each stream carries one kind of information so the interface can update it independently. The percentage and speed describe the transfer reported by yt-dlp; stage messages describe later work such as merging or embedding metadata. Playlist messages show an item number when yt-dlp reports one. As a result, a transfer percentage reaching 100% does not necessarily mean all post-processing has finished.
+The global streams each carry one kind of information so the interface can update it independently. The per-download stream combines those updates as named events and includes an initial snapshot. The percentage and speed describe the transfer reported by yt-dlp; stage messages describe later work such as merging or embedding metadata. Playlist messages show an item number when yt-dlp reports one. As a result, a transfer percentage reaching 100% does not necessarily mean all post-processing has finished.
 
 If the page disconnects, its SSE request closes and the controller removes that stream's listener. The download process itself is managed by the main process and service, not by the page's event connection.
 
 ## 4. Completion, errors, and stopping
 
-When yt-dlp exits, the service uses its exit code to determine whether the download completed. A zero exit code resolves the start-download request with the output folder. The controller can then show the configured system notification. A non-zero exit or a process stopped by the user rejects the request; the renderer reports an error where appropriate and restores the download controls.
+When yt-dlp exits, the service uses its exit code to determine whether the download completed. A zero exit code resolves the IPC start-download call with the output folder, or emits a `completed` SSE event for an HTTP job. A non-zero exit or a process stopped by the user rejects the IPC call or emits a `failed` event for HTTP. The controller can then show the configured system notification; the renderer reports errors where appropriate and restores the download controls.
 
 The **Stop** button uses a separate IPC action from the still-running start request. It asks the service to terminate the active yt-dlp process; Windows uses `taskkill` to stop the process tree, while other platforms attempt to stop the detached process group. The cancel action acknowledges the stop request, and the original start request then completes with a cancellation error when the child process closes.
 

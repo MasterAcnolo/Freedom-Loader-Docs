@@ -1,0 +1,112 @@
+---
+sidebar_position: 8
+---
+
+# Local HTTP API
+
+Freedom Loader exposes a local HTTP API while the desktop application is running. The server listens on `127.0.0.1:8787`; requests are intended for integrations on the same computer, not for other devices on the network. The `/` page is the Electron interface and is not an API endpoint.
+
+The canonical [OpenAPI 3.1 specification](https://raw.githubusercontent.com/MasterAcnolo/Freedom-Loader/main/openapi.yaml) is maintained in the [main Freedom Loader application repository](https://github.com/MasterAcnolo/Freedom-Loader/blob/main/openapi.yaml). [Browse it in Swagger Editor](https://editor.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FMasterAcnolo%2FFreedom-Loader%2Fmain%2Fopenapi.yaml). This page provides usage guidance for the same endpoints.
+
+When Freedom Loader is running locally, open [http://localhost:8787/api](http://localhost:8787/api) for the interactive Swagger UI bundled with the app. It serves the app's OpenAPI file directly and does not require the hosted documentation site.
+
+## Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/health` | Server health check |
+| `GET`, `POST` | `/info` | Fetch normalized video or playlist information |
+| `POST` | `/download` | Start a download and immediately receive its ID |
+| `POST` | `/download/cancel` | Cancel the active download |
+| `GET` | `/download/{downloadId}/events` | Per-download SSE snapshot and live events |
+| `GET` | `/download/progress` | Progress SSE stream |
+| `GET` | `/download/speed` | Transfer speed SSE stream |
+| `GET` | `/download/stage` | Download and post-processing stage SSE stream |
+| `GET` | `/download/playlist-info` | Playlist item progress SSE stream |
+
+## Health check
+
+```bash
+curl 'http://127.0.0.1:8787/health'
+```
+
+Successful response:
+
+```json
+{"status":"ok"}
+```
+
+## Video and playlist information
+
+`GET /info` accepts `source` and `url` as query parameters. Use URL encoding rather than placing raw quotes or query-string separators in the URL:
+
+```bash
+curl --get 'http://127.0.0.1:8787/info' \
+  --data-urlencode 'source=AfterEffectsPlugin' \
+  --data-urlencode 'url=https://www.youtube.com/watch?v=VIDEO_ID&list=PLAYLIST_ID'
+```
+
+`POST /info` accepts the same values as JSON:
+
+```bash
+curl --request POST 'http://127.0.0.1:8787/info' \
+  --header 'Content-Type: application/json' \
+  --data '{"source":"AfterEffectsPlugin","url":"https://www.youtube.com/watch?v=VIDEO_ID"}'
+```
+
+The JSON response has `type: "video"` or `type: "playlist"`. Video fields depend on metadata available from the source; playlist responses include a `videos` array.
+
+## Start a download and follow its events
+
+```bash
+response=$(curl --silent --show-error --request POST 'http://127.0.0.1:8787/download' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "source": "AfterEffectsPlugin",
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID",
+    "audioOnly": false,
+    "quality": "1080",
+    "codec": "h264",
+    "outputFolder": "/home/user/Downloads"
+  }')
+
+echo "$response"
+events_url=$(printf '%s' "$response" | node -pe 'JSON.parse(require("fs").readFileSync(0, "utf8")).eventsUrl')
+curl --no-buffer "http://127.0.0.1:8787${events_url}"
+```
+
+`source` and `url` are required. The start endpoint immediately responds with HTTP `202 Accepted`, a `downloadId`, and an `eventsUrl`. The associated SSE stream first sends a `snapshot` of the current status and latest values, then live events named `status`, `progress`, `speed`, `stage`, `playlist-info`, and `completed` or `failed`. The snapshot means clients may connect after the POST response without missing early updates. Recent terminal jobs are retained in memory (up to 20).
+
+Available qualities are `best`, `medium`, `worst`, `1080`, `720`, and `480`; unsupported quality values fall back to `best`. `audioOnly` accepts `true` or `"1"`. Available codecs are `av01`, `vp9.2`, `vp9`, `h265`, `h264`, `vp8`, `h263`, and `theora`. If omitted, the configured codec is used; an unsupported codec falls back to `h264`. `outputFolder` (or its alias `savePath`) is optional and is subject to the application's path validation.
+
+A `completed` SSE event contains the final result:
+
+```json
+{
+  "success": true,
+  "message": "Download Done !",
+  "outputFolder": "/home/user/Downloads"
+}
+```
+
+If another download is active, its event stream emits a `failed` event. Invalid URLs or disallowed output paths return `400` before a download is accepted. Requests to `/download` are limited to 100 per IP address per 15 minutes.
+
+## Cancel a download
+
+```bash
+curl --request POST 'http://127.0.0.1:8787/download/cancel'
+```
+
+The endpoint responds with `200` when a cancellation is requested and `400 NO_DOWNLOAD_IN_PROGRESS` if no download is active. The original start request completes separately when yt-dlp exits.
+
+## Subscribe to progress with SSE
+
+The global streams remain available for the application UI and legacy integrations:
+
+```bash
+curl --no-buffer 'http://127.0.0.1:8787/download/progress'
+```
+
+Other global streams are `/download/speed`, `/download/stage`, and `/download/playlist-info`. The per-download stream from `eventsUrl` is recommended for integrations because its events belong to one download and its initial snapshot avoids missing early updates. Closing an SSE stream removes that client's listener but does not stop yt-dlp; use `POST /download/cancel` to cancel the download.
+
+The information endpoint is limited to 60 requests per IP address per minute. SSE routes do not use that limiter.
